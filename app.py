@@ -8,13 +8,15 @@ that matches a regular expression and moves them to the output directory.
 import sys
 
 from PyQt5.QtCore import QDateTime, Qt, QTimer
+from PyQt5.QtGui import QTextCursor
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow,
 	QWidget, QGridLayout, QLineEdit, QPushButton, QVBoxLayout,
 	QStyleFactory, QGroupBox, QRadioButton, QCheckBox, QDialog,
-	QFormLayout, QHBoxLayout, QSpinBox, QLabel)
+	QFormLayout, QHBoxLayout, QSpinBox, QLabel, QStatusBar,
+	QTextBrowser)
 
-from utils import About, Statistics, Plots
+from utils import About, Statistics, Plots, Logs
 
 __version__ = "1.0"
 __author__ = "rdoyama"
@@ -49,9 +51,11 @@ class MoveFileAppUI(QMainWindow):
 				"fileMoveTimeTaken": []
 		}
 
+		self._createStatusBar()
 		self._createInputsBox()
 		self._createStatisticsBox()
 		self._createPlotsBox()
+		self._createLogBox()
 
 		centralWidget.setLayout(self.mainLayout)
 		self.setCentralWidget(centralWidget)
@@ -81,6 +85,11 @@ class MoveFileAppUI(QMainWindow):
 					__author__,
 					f"https://www.github.com/{__author__}/moving_files")
 		widget.exec_()
+
+	def _createStatusBar(self):
+		self.statusBar = QStatusBar()
+		self.statusBar.showMessage("Ready")
+		self.setStatusBar(self.statusBar)
 
 	def _createInputsBox(self):
 		"""
@@ -143,6 +152,20 @@ class MoveFileAppUI(QMainWindow):
 		self.plots.create(plotsBox)
 
 		self.mainLayout.addWidget(plotsBox, 1, 0, 1, 2)
+
+	def _createLogBox(self):
+		logBox = QGroupBox("Log")
+		self.logs = Logs()
+		self.logs.create(logBox)
+		# self.logs = QTextBrowser()
+		# self.cursor = QTextCursor(self.logs.document())
+		# self.logs.setTextCursor(self.cursor)
+		# self.logs.setPlaceholderText("Enter some text here\nLine2")
+		# # self.cursor.insertText("Line 1\nLine2")
+		# self.logs.moveCursor(QTextCursor.End)
+
+		# logBox.addWidget(self.logs)
+		self.mainLayout.addWidget(logBox, 2, 0, 1, 2)
 
 
 def main():
