@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow,
 	QStyleFactory, QGroupBox, QRadioButton, QCheckBox, QDialog,
 	QFormLayout, QHBoxLayout, QSpinBox, QLabel)
 
-from utils import About, Statistics
+from utils import About, Statistics, Plots
 
 __version__ = "1.0"
 __author__ = "rdoyama"
@@ -33,14 +33,25 @@ class MoveFileAppUI(QMainWindow):
 	def __init__(self):
 		super().__init__()
 		self.setWindowTitle("Moving Files App")
-		# self.setFixedSize(800, 600)
+		# self.setFixedSize(1000, 600)
 		self._createMenu()
 
 		centralWidget = QWidget()
 		self.mainLayout = QGridLayout()
 
+		self.data = {
+				"fileCount": 0,
+				"runCount": 0,
+				"runStarts": [],
+				"runNumFiles": [],
+				"fileSizes": [],
+				"fileMoveTime": [],
+				"fileMoveTimeTaken": []
+		}
+
 		self._createInputsBox()
 		self._createStatisticsBox()
+		self._createPlotsBox()
 
 		centralWidget.setLayout(self.mainLayout)
 		self.setCentralWidget(centralWidget)
@@ -68,7 +79,7 @@ class MoveFileAppUI(QMainWindow):
 		about = About()
 		about.show(widget, __version__,
 					__author__,
-					f"https://www.github.com/{__author__}")
+					f"https://www.github.com/{__author__}/moving_files")
 		widget.exec_()
 
 	def _createInputsBox(self):
@@ -120,10 +131,18 @@ class MoveFileAppUI(QMainWindow):
 
 	def _createStatisticsBox(self):
 		statsBox = QGroupBox("Statistics")
-		stats = Statistics()
-		stats.show(statsBox, [1, 2, 3, 4, 5]) # Replace with data
+		self.stats = Statistics()
+		self.stats.create(statsBox)
+		# self.stats.update([]) # Replace with data
 
 		self.mainLayout.addWidget(statsBox, 0, 1, 1, 1)
+
+	def _createPlotsBox(self):
+		plotsBox = QGroupBox("Plots")
+		self.plots = Plots()
+		self.plots.create(plotsBox)
+
+		self.mainLayout.addWidget(plotsBox, 1, 0, 1, 2)
 
 
 def main():
