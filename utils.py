@@ -2,7 +2,15 @@
 Some useful and general method and classes
 """
 
-from PyQt5.QtWidgets import QLabel, QVBoxLayout
+from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy
+
+import random
+
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
 
 class About(object):
 	def show(self, Widget, version, author, git):
@@ -27,16 +35,90 @@ class About(object):
 
 
 class Statistics(object):
-	def show(self, Widget, data):
+	def create(self, Widget):
 		text = """
-			<br>Average: {} saushuhauhusdgyagsdasdgahg</br>
+			<br>Average: saushuhauhusdgyagsdasdgahg</br>
 			<br>Other statistics</br>
-		""".format(sum(data)/len(data))
+		"""
 
 		boxLayout = QVBoxLayout()
 
-		textLabel = QLabel(text)
-		boxLayout.addWidget(textLabel)
+		self.textLabel = QLabel(text)
+		boxLayout.addWidget(self.textLabel)
 		Widget.setLayout(boxLayout)
 
-	
+	def update(self, data):
+		new_text = """
+			<br>Average: 123</br>
+			<br>Other statistics123</br>
+		"""
+		self.textLabel.setText(new_text)
+
+
+class Plots(object):
+	def create(self, Widget):
+		boxLayout = QHBoxLayout()
+		self.leftPlot = PlotCanvas(plotType="bar")
+		self.rightPlot = PlotCanvas(plotType="hist")
+		boxLayout.addWidget(self.leftPlot)
+		boxLayout.addWidget(self.rightPlot)
+		Widget.setLayout(boxLayout)
+
+	def update(self, data):
+		self.leftPlot.plotBar(data)
+		self.rightPlot.plotHist(data)
+
+
+# class WidgetPlot(QWidget):
+# 	def __init__(self, *args, **kwargs):
+# 		QWidget.__init__(self, *args, **kwargs)
+# 		self.setLayout(QVBoxLayout())
+# 		self.canvas = PlotCanvas(self, width=1, height=1)
+# 		self.layout().addWidget(self.canvas)
+
+
+class PlotCanvas(FigureCanvas):
+	def __init__(self, parent=None, width=5, height=3, dpi=100,
+						data={}, plotType="hist"):
+		fig = plt.Figure(figsize=(width, height), dpi=dpi)
+		# fig.patch.set_alpha(0)
+		fig.subplots_adjust(bottom=0.20, left=0.18)
+		FigureCanvas.__init__(self, fig)
+		self.setParent(parent)
+		FigureCanvas.setSizePolicy(self, QSizePolicy.Expanding, QSizePolicy.Expanding)
+		FigureCanvas.updateGeometry(self)
+
+		if plotType == "hist":
+			self.plotHist(data)
+		elif plotType == "bar":
+			self.plotBar(data)
+
+	def plotHist(self, data):
+		ax = self.figure.add_subplot(111)
+		fileSizes = data.get("fileSizes", [])
+		ax.hist(data, bins=min(len(fileSizes)//2 + 1, 30))
+		ax.set_ylabel("File Count")
+		ax.set_xlabel("Fize Size (kB)")
+		ax.set_title("Histogram of file sizes")
+		plt.tight_layout()
+		self.draw()
+
+	def plotBar(self, data, n=5):
+		"""
+		Plots the number of files moved in the last n runs
+		"""
+		# runStarts = data.get("runStarts", [])[-n:]
+		runNumFiles = data.get("runNumFiles", [])[-n:]
+		runCount = data.get("runCount", 0)
+		runNo = list(range(max(runCount-n+1, 1), runCount+1))
+		print(runNo)
+		ax = self.figure.add_subplot(111)
+		ax.bar(runNo, runNumFiles)
+		# ax.set_xticks(runStarts)
+		ax.set_ylabel("File Count")
+		ax.set_xlabel("Run")
+		ax.set_title(f"Files moved in the last {n} runs")
+		# ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d %H:%M:%S"))
+		# ax.xaxis.set_tick_params(rotation=30)
+		plt.tight_layout()
+		self.draw()
