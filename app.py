@@ -26,16 +26,15 @@ class MoveFileAppUI(QMainWindow):
 	"""
 	Graphical User Interface class.
 
-	First idea: one H layout on top for user input, timer
-				one more below for one plot and statistics
-				one last in the bottom for log
-
-				plus: Menu, Help, status bar
+	Creates a simple menu, status bar and four boxes for:
+	inputs, statistics, plots and logs. Actions, input
+	checking, etc. is performed by the Controller class.
 	"""
 	def __init__(self):
 		super().__init__()
 		self.setWindowTitle("Moving Files App")
-		# self.setFixedSize(1000, 600)
+		# self.setFixedSize(1000, 700)
+		self.resize(1000, 700)
 		self._createMenu()
 
 		centralWidget = QWidget()
@@ -106,14 +105,20 @@ class MoveFileAppUI(QMainWindow):
 
 		self.regex = QLineEdit()
 		self.regex.setAlignment(Qt.AlignRight)
+		txtExample = "Example: for all .zip files use .*\.zip"
+		self.regex.setPlaceholderText(txtExample)
 		formLayout.addRow("Regex:", self.regex)
 
 		self.sourceDir = QLineEdit()
 		self.sourceDir.setAlignment(Qt.AlignRight)
+		txtExample = "/home/user/source_dir"
+		self.sourceDir.setPlaceholderText(txtExample)
 		formLayout.addRow("Source Directory:", self.sourceDir)
 
 		self.destDir = QLineEdit()
 		self.destDir.setAlignment(Qt.AlignRight)
+		txtExample = "/home/user/destination_dir"
+		self.destDir.setPlaceholderText(txtExample)
 		formLayout.addRow("Destination Directory:", self.destDir)
 		
 		self.timer = QSpinBox(self)
@@ -157,15 +162,21 @@ class MoveFileAppUI(QMainWindow):
 		logBox = QGroupBox("Log")
 		self.logs = Logs()
 		self.logs.create(logBox)
-		# self.logs = QTextBrowser()
-		# self.cursor = QTextCursor(self.logs.document())
-		# self.logs.setTextCursor(self.cursor)
-		# self.logs.setPlaceholderText("Enter some text here\nLine2")
-		# # self.cursor.insertText("Line 1\nLine2")
-		# self.logs.moveCursor(QTextCursor.End)
 
-		# logBox.addWidget(self.logs)
 		self.mainLayout.addWidget(logBox, 2, 0, 1, 2)
+
+
+class Controller(object):
+	"""
+	Handles actions, plots, logs and statistics updates and
+	input checking.
+	"""
+	def __init__(self, gui):
+		self._gui = gui
+		self._connectSignals()
+
+	def _connectSignals(self):
+		pass
 
 
 def main():
