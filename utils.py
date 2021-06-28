@@ -2,7 +2,10 @@
 Some useful and general method and classes
 """
 
-from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy
+from PyQt5.QtWidgets import (QLabel, QVBoxLayout, QWidget,
+			QHBoxLayout, QSizePolicy, QTextEdit)
+
+from PyQt5.QtGui import QTextCursor
 
 import random
 
@@ -69,6 +72,24 @@ class Plots(object):
 		self.rightPlot.plotHist(data)
 
 
+class Logs(object):
+	def create(self, Widget):
+		boxLayout = QVBoxLayout()
+		self.txtBrowser = QTextEdit()
+		self.txtBrowser.setReadOnly(True)
+		self.cursor = QTextCursor(self.txtBrowser.document())
+		self.txtBrowser.setTextCursor(self.cursor)
+		self.txtBrowser.append("Line 2")
+		self.txtBrowser.append("Line 3")
+		self.txtBrowser.append("Line 2")
+		self.txtBrowser.append("Line 2")
+		self.txtBrowser.append("Line 2")
+		self.txtBrowser.append("Line 2")
+		self.txtBrowser.moveCursor(QTextCursor.End)
+		boxLayout.addWidget(self.txtBrowser)
+		Widget.setLayout(boxLayout)
+
+
 # class WidgetPlot(QWidget):
 # 	def __init__(self, *args, **kwargs):
 # 		QWidget.__init__(self, *args, **kwargs)
@@ -111,7 +132,6 @@ class PlotCanvas(FigureCanvas):
 		runNumFiles = data.get("runNumFiles", [])[-n:]
 		runCount = data.get("runCount", 0)
 		runNo = list(range(max(runCount-n+1, 1), runCount+1))
-		print(runNo)
 		ax = self.figure.add_subplot(111)
 		ax.bar(runNo, runNumFiles)
 		# ax.set_xticks(runStarts)
