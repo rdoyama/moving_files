@@ -14,6 +14,7 @@ import glob
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from matplotlib.ticker import MaxNLocator
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
@@ -41,10 +42,15 @@ class About(object):
 
 
 class Statistics(object):
-	def create(self, Widget):
+	def create(self, Widget, lineWidth=30):
 		text = """
-			<br>Average: saushuhauhusdgyagsdasdgahg</br>
-			<br>Other statistics</br>
+			<center><code>
+			  <br>Files moved: ...</br>
+			  <br>Average file size: ... kB</br>
+			  <br>Largest file size: ... kB</br>
+			  <br>Average moves per run: ...</br>
+			  <br>Run: ...</br>
+			</center></code>
 		"""
 
 		boxLayout = QVBoxLayout()
@@ -60,19 +66,15 @@ class Statistics(object):
 		"""
 		self.textLabel.setText(new_text)
 
-
-class Plots(object):
-	def create(self, Widget):
-		boxLayout = QHBoxLayout()
-		self.leftPlot = PlotCanvas(plotType="bar")
-		self.rightPlot = PlotCanvas(plotType="hist")
-		boxLayout.addWidget(self.leftPlot)
-		boxLayout.addWidget(self.rightPlot)
-		Widget.setLayout(boxLayout)
-
-	def update(self, data):
-		self.leftPlot.plotBar(data)
-		self.rightPlot.plotHist(data)
+	def reset(self):
+		text = """
+			<br>Files moved: ...</br>
+			<br>Average file size: ... kB</br>
+			<br>Largest file size: ... kB</br>
+			<br></br>
+			<br></br>
+		"""
+		self.textLabel.setText(text)
 
 
 class LogBox(object):
@@ -87,16 +89,33 @@ class LogBox(object):
 		Widget.setLayout(boxLayout)
 
 	def update(self, message):
-		self.txtBrowser.append(message)
+		self.txtBrowser.append(f"<code>{message}</code>")
+
+	def reset(self):
+		self.txtBrowser.setText("")
+
+
+class Plots(object):
+	def create(self, Widget):
+		boxLayout = QHBoxLayout()
+		self.leftPlot = PlotCanvas(plotType="bar")
+		self.rightPlot = PlotCanvas(plotType="hist")
+		boxLayout.addWidget(self.leftPlot)
+		boxLayout.addWidget(self.rightPlot)
+		Widget.setLayout(boxLayout)
+
+	def update(self, data, update=True):
+		self.leftPlot.plotBar(data, update=update)
+		self.rightPlot.plotHist(data, update=update)
 
 
 class PlotCanvas(FigureCanvas):
 	def __init__(self, parent=None, width=5, height=3, dpi=100,
 						data={}, plotType="hist"):
-		fig = plt.Figure(figsize=(width, height), dpi=dpi)
-		fig.patch.set_alpha(0)
-		fig.subplots_adjust(bottom=0.20, left=0.18)
-		FigureCanvas.__init__(self, fig)
+		self.fig = plt.Figure(figsize=(width, height), dpi=dpi)
+		# fig.patch.set_alpha(0)
+		self.fig.subplots_adjust(bottom=0.20, left=0.18)
+		FigureCanvas.__init__(self, self.fig)
 		self.setParent(parent)
 		FigureCanvas.setSizePolicy(self, QSizePolicy.Expanding, QSizePolicy.Expanding)
 		FigureCanvas.updateGeometry(self)
@@ -106,29 +125,47 @@ class PlotCanvas(FigureCanvas):
 		elif plotType == "bar":
 			self.plotBar(data)
 
-	def plotHist(self, data):
-		ax = self.figure.add_subplot(111)
+	def plotHist(self, data, update=False):
 		fileSizes = data.get("fileSizes", [])
-		ax.hist(data, bins=min(len(fileSizes)//2 + 1, 30))
-		ax.set_ylabel("File Count")
-		ax.set_xlabel("Fize Size (kB)")
-		ax.set_title("Histogram of file sizes")
+		if update:
+			self.axHist.cla()
+			# self.hist.set_data(fileSizes)
+			_, _, self.hist = self.axHist.hist(fileSizes,
+					bins=min(len(fileSizes)//2 + 1, 30))
+			self.axHist.relim()
+			self.axHist.autoscale_view()
+		else:
+			self.axHist = self.figure.add_subplot(111)
+			_, _, self.hist = self.axHist.hist(fileSizes,
+					bins=min(len(fileSizes)//2 + 1, 30))
+
+		self.axHist.set_ylabel("File Count")
+		self.axHist.set_xlabel("Fize Size (kB)")
+		self.axHist.set_title("Histogram of file sizes")
 		plt.tight_layout()
 		self.draw()
 
-	def plotBar(self, data, n=5):
+	def plotBar(self, data, n=5, update=False):
 		"""
 		Plots the number of files moved in the last n runs
 		"""
 		runNumFiles = data.get("runNumFiles", [])[-n:]
 		runCount = data.get("runCount", 0)
 		runNo = list(range(max(runCount-n+1, 1), runCount+1))
-		ax = self.figure.add_subplot(111)
-		ax.bar(runNo, runNumFiles)
-		ax.set_xticks(runNo)
-		ax.set_ylabel("File Count")
-		ax.set_xlabel("Run")
-		ax.set_title(f"Files moved in the last {n} runs")
+		if update:
+			self.axBar.cla()
+		else:
+			self.axBar = self.figure.add_subplot(111)
+
+		self.bar = self.axBar.bar(runNo, runNumFiles)
+		# self.axBar.set_xticks(runNo)
+		self.axBar.set_ylabel("File Count")
+		self.axBar.set_xlabel("Run")
+		xmin = 0 if runNo == [] else min(runNo) - 1
+		xmax = 2 if runNo == [] else max(runNo) + 1
+		self.axBar.set_xlim(xmin, xmax)
+		self.axBar.xaxis.set_major_locator(MaxNLocator(integer=True))
+		self.axBar.set_title(f"Files moved in the last {n} runs")
 		# ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d %H:%M:%S"))
 		# ax.xaxis.set_tick_params(rotation=30)
 		plt.tight_layout()
