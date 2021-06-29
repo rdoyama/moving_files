@@ -6,6 +6,8 @@ that matches a regular expression and moves them to the output directory.
 """
 
 import sys
+import os
+import time
 
 from PyQt5.QtCore import QDateTime, Qt, QTimer
 from PyQt5.QtGui import QTextCursor
@@ -14,7 +16,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow,
 	QWidget, QGridLayout, QLineEdit, QPushButton, QVBoxLayout,
 	QStyleFactory, QGroupBox, QRadioButton, QCheckBox, QDialog,
 	QFormLayout, QHBoxLayout, QSpinBox, QLabel, QStatusBar,
-	QTextBrowser)
+	QTextBrowser, QCheckBox)
 
 from utils import (About, Statistics, Plots, LogBox, checkRegex,
 	validPath, getValidFiles)
@@ -40,16 +42,6 @@ class MoveFileAppUI(QMainWindow):
 
 		centralWidget = QWidget()
 		self.mainLayout = QGridLayout()
-
-		self.data = {
-				"fileCount": 0,
-				"runCount": 0,
-				"runStarts": [],
-				"runNumFiles": [],
-				"fileSizes": [],
-				"fileMoveTime": [],
-				"fileMoveTimeTaken": []
-		}
 
 		self._createStatusBar()
 		self._createInputsBox()
@@ -137,9 +129,14 @@ class MoveFileAppUI(QMainWindow):
 		self.startButton = QPushButton("Start", self)
 		self.stopButton = QPushButton("Stop", self)
 		self.resetButton = QPushButton("Reset", self)
+		self.overwriteCheck = QCheckBox("Overwrite existing files", self)
+		self.overwrite = False
+		self.overwriteCheck.stateChanged.connect(self._checkOverwrite)
+
 		buttonsLayout.addWidget(self.startButton)
 		buttonsLayout.addWidget(self.stopButton)
 		buttonsLayout.addWidget(self.resetButton)
+		buttonsLayout.addWidget(self.overwriteCheck)
 
 		boxLayout.addLayout(buttonsLayout)
 
@@ -149,6 +146,12 @@ class MoveFileAppUI(QMainWindow):
 		self.timer.setValue(4)
 
 		self.mainLayout.addWidget(inputBox, 0, 0, 1, 1)
+
+	def _checkOverwrite(self, state):
+		if Qt.Checked == state:
+			self.overwrite = True
+		else:
+			self.overwrite = False
 
 	def _createStatisticsBox(self):
 		statsBox = QGroupBox("Statistics")
@@ -183,6 +186,15 @@ class Controller(object):
 		self._running = False
 		self.timer = QTimer(self._gui)
 		self.timer.timeout.connect(self._moveWaitRepeat)
+		self.data = {
+				"fileCount": 0,
+				"runCount": 0,
+				"runStarts": [],
+				"runNumFiles": [],
+				"fileSizes": [],
+				"fileMoveTime": [],
+				"fileMoveTimeTaken": []
+		}
 		self._connectSignals()
 
 	def _connectSignals(self):
@@ -209,16 +221,42 @@ class Controller(object):
 		self._gui.statusBar.showMessage("Getting valid files list")
 		validFiles = getValidFiles(self.srcDir, self.regex)
 		self._gui.logs.update(f"Found {len(validFiles)} files")
+
+		successMoves = 0
 		for file in validFiles:
+
 			if not self._running:
 				self.timer.stop()
 				return
-			self._gui.logs.update(f"Moving file: {file}")
-			# Move file
 
-		self.timer.start(4000)
+			futurePath = os.path.join(self.dstDir, os.path.basename(file))
+			if not self._gui.overwrite and os.path.isfile(futurePath):
+				self._gui.logs.update(f"File {file} already exists. Skipping...")
+				continue
+
+			fileSize = os.path.getsize(file) / 1000 # in kbytes
+			self._gui.logs.update(f"Moving file: {os.path.basename(file)}")
+			try:
+				moveTime = time.perf_counter()
+				os.rename(file, futurePath)
+				moveTime = time.perf_counter() - t0
+				self.data["fileCount"] += 1
+				self.data["fileSizes"].append(fileSize)
+				self.data["fileMoveTimeTaken"].append(moveTime)
+				successMoves += 1
+			except Exception as E:
+				print(E)
+
+		self.data["runNumFiles"].append(successMoves)
+
+			# Move file
+			# self._moveFilesUpdateData(validFiles)
+		# Update statistics
+		# Update Plots
+
+		self.timer.start(1000 * self._gui.timer.value())
 		print("Done")
-		
+
 	def _checkInputs(self, regex, srcDir, dstDir):
 		if not checkRegex(regex):
 			self._gui.statusBar.showMessage("Bad Regular Expression")
