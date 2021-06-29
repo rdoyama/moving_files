@@ -8,6 +8,9 @@ from PyQt5.QtWidgets import (QLabel, QVBoxLayout, QWidget,
 from PyQt5.QtGui import QTextCursor
 
 import random
+import re
+import os
+import glob
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -72,7 +75,7 @@ class Plots(object):
 		self.rightPlot.plotHist(data)
 
 
-class Logs(object):
+class LogBox(object):
 	def create(self, Widget):
 		boxLayout = QVBoxLayout()
 		self.txtBrowser = QTextEdit()
@@ -89,13 +92,8 @@ class Logs(object):
 		boxLayout.addWidget(self.txtBrowser)
 		Widget.setLayout(boxLayout)
 
-
-# class WidgetPlot(QWidget):
-# 	def __init__(self, *args, **kwargs):
-# 		QWidget.__init__(self, *args, **kwargs)
-# 		self.setLayout(QVBoxLayout())
-# 		self.canvas = PlotCanvas(self, width=1, height=1)
-# 		self.layout().addWidget(self.canvas)
+	def update(self, message):
+		self.txtBrowser.append(message)
 
 
 class PlotCanvas(FigureCanvas):
@@ -142,3 +140,25 @@ class PlotCanvas(FigureCanvas):
 		# ax.xaxis.set_tick_params(rotation=30)
 		plt.tight_layout()
 		self.draw()
+
+
+def checkRegex(regex):
+	try:
+		re.compile(regex)
+		return True
+	except re.error:
+		return False
+
+
+def validPath(directory):
+	return os.path.isdir(directory) and os.access(directory, os.W_OK)
+
+
+def getValidFiles(srcDir, regex):
+	allFinds = glob.glob(os.path.join(srcDir, "*"))
+	matching = []
+	for obj in allFinds:
+		if re.match(regex, os.path.basename(obj)) is not None and\
+					os.path.isfile(obj):
+			matching.append(obj)
+	return matching
