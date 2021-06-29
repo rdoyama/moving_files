@@ -61,6 +61,8 @@ class MoveFileAppUI(QMainWindow):
 		for style in QStyleFactory.keys():
 			styleMenu.addAction(style, lambda arg=style: self._changeStyle(arg))
 		
+		self.clearMenu = self.menu.addAction("Clear")
+
 		self.menu.addAction("&Exit", self.close)
 
 		# Help menu
@@ -117,6 +119,7 @@ class MoveFileAppUI(QMainWindow):
 		self.timer = QSpinBox(self)
 		self.timer.setValue(60)
 		self.timer.setMaximum(1000000)
+		self.timer.setMinimum(1)
 		self.timer.setAlignment(Qt.AlignRight)
 		formLayout.addRow("Timer (seconds):", self.timer)
 
@@ -140,12 +143,12 @@ class MoveFileAppUI(QMainWindow):
 
 		boxLayout.addLayout(buttonsLayout)
 
-		self.regex.setText(".*png")
-		self.sourceDir.setText("/home/rafael/Desktop")
-		self.destDir.setText("/home/rafael/Desktop")
+		self.regex.setText(".*jpg")
+		self.sourceDir.setText("/home/rafael/Desktop/teste/folder1")
+		self.destDir.setText("/home/rafael/Desktop/teste/folder2")
 		self.timer.setValue(4)
 
-		self.mainLayout.addWidget(inputBox, 0, 0, 1, 1)
+		self.mainLayout.addWidget(inputBox, 0, 0, 1, 7)
 
 	def _checkOverwrite(self, state):
 		if Qt.Checked == state:
@@ -159,21 +162,21 @@ class MoveFileAppUI(QMainWindow):
 		self.stats.create(statsBox)
 		# self.stats.update([]) # Replace with data
 
-		self.mainLayout.addWidget(statsBox, 0, 1, 1, 1)
+		self.mainLayout.addWidget(statsBox, 0, 7, 1, 3)
 
 	def _createPlotsBox(self):
 		plotsBox = QGroupBox("Plots")
 		self.plots = Plots()
 		self.plots.create(plotsBox)
 
-		self.mainLayout.addWidget(plotsBox, 1, 0, 1, 2)
+		self.mainLayout.addWidget(plotsBox, 1, 0, 1, 10)
 
 	def _createLogBox(self):
 		logBox = QGroupBox("Log")
 		self.logs = LogBox()
 		self.logs.create(logBox)
 
-		self.mainLayout.addWidget(logBox, 2, 0, 1, 2)
+		self.mainLayout.addWidget(logBox, 2, 0, 1, 10)
 
 
 class Controller(object):
@@ -201,6 +204,22 @@ class Controller(object):
 		self._gui.startButton.clicked.connect(self._start)
 		self._gui.resetButton.clicked.connect(self._resetInputs)
 		self._gui.stopButton.clicked.connect(self._stop)
+		self._gui.clearMenu.triggered.connect(self._clear)
+
+	def _clear(self):
+		self.data = {
+				"fileCount": 0,
+				"runCount": 0,
+				"runStarts": [],
+				"runNumFiles": [],
+				"fileSizes": [],
+				"fileMoveTime": [],
+				"fileMoveTimeTaken": []
+		}
+		self._gui.plots.update(self.data)
+		self._gui.stats.reset()
+		self._gui.logs.reset()
+		self._resetInputs()
 
 	def _start(self):
 		self._gui.logs.update("Checking inputs...")
@@ -239,23 +258,27 @@ class Controller(object):
 			try:
 				moveTime = time.perf_counter()
 				os.rename(file, futurePath)
-				moveTime = time.perf_counter() - t0
+				moveTime = time.perf_counter() - moveTime
 				self.data["fileCount"] += 1
 				self.data["fileSizes"].append(fileSize)
 				self.data["fileMoveTimeTaken"].append(moveTime)
+				self.data["fileMoveTime"].append(QDateTime.currentDateTime())
 				successMoves += 1
 			except Exception as E:
 				print(E)
 
 		self.data["runNumFiles"].append(successMoves)
+		self.data["runCount"] += 1
 
-			# Move file
-			# self._moveFilesUpdateData(validFiles)
-		# Update statistics
-		# Update Plots
+		self._gui.plots.update(self.data)
+
+		self._gui.logs.update(f"Iteration complete. {successMoves} files were moved.")
+
+		now = QDateTime.currentDateTime()
+		nextIt = now.addSecs(self._gui.timer.value())
+		self._gui.logs.update(f"Next iteration at {nextIt.toString('yyyy-MM-dd HH:mm:ss')}")
 
 		self.timer.start(1000 * self._gui.timer.value())
-		print("Done")
 
 	def _checkInputs(self, regex, srcDir, dstDir):
 		if not checkRegex(regex):
