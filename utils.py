@@ -82,12 +82,6 @@ class LogBox(object):
 		self.txtBrowser.setReadOnly(True)
 		self.cursor = QTextCursor(self.txtBrowser.document())
 		self.txtBrowser.setTextCursor(self.cursor)
-		self.txtBrowser.append("Line 2")
-		self.txtBrowser.append("Line 3")
-		self.txtBrowser.append("Line 2")
-		self.txtBrowser.append("Line 2")
-		self.txtBrowser.append("Line 2")
-		self.txtBrowser.append("Line 2")
 		self.txtBrowser.moveCursor(QTextCursor.End)
 		boxLayout.addWidget(self.txtBrowser)
 		Widget.setLayout(boxLayout)
@@ -100,7 +94,7 @@ class PlotCanvas(FigureCanvas):
 	def __init__(self, parent=None, width=5, height=3, dpi=100,
 						data={}, plotType="hist"):
 		fig = plt.Figure(figsize=(width, height), dpi=dpi)
-		# fig.patch.set_alpha(0)
+		fig.patch.set_alpha(0)
 		fig.subplots_adjust(bottom=0.20, left=0.18)
 		FigureCanvas.__init__(self, fig)
 		self.setParent(parent)
@@ -126,13 +120,12 @@ class PlotCanvas(FigureCanvas):
 		"""
 		Plots the number of files moved in the last n runs
 		"""
-		# runStarts = data.get("runStarts", [])[-n:]
 		runNumFiles = data.get("runNumFiles", [])[-n:]
 		runCount = data.get("runCount", 0)
 		runNo = list(range(max(runCount-n+1, 1), runCount+1))
 		ax = self.figure.add_subplot(111)
 		ax.bar(runNo, runNumFiles)
-		# ax.set_xticks(runStarts)
+		ax.set_xticks(runNo)
 		ax.set_ylabel("File Count")
 		ax.set_xlabel("Run")
 		ax.set_title(f"Files moved in the last {n} runs")
@@ -151,6 +144,7 @@ def checkRegex(regex):
 
 
 def validPath(directory):
+	"""Existing directory with writing permissions"""
 	return os.path.isdir(directory) and os.access(directory, os.W_OK)
 
 
