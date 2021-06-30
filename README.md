@@ -29,7 +29,7 @@ In the main window there ate three buttons: "Start", "Stop" and "Reset". The "St
 
 ## Configuration File
 
- - `initialWidth` and `initialHeight`define the width and height of the main window. The minimum recommended values are 1000 and 7000, respectively.
+ - `initialWidth` and `initialHeight`define the width and height of the main window. The minimum recommended values are 1000 and 700, respectively.
  - `statsTextWidth` is the size of each line in the statistics box measured in characters. The minimum recommended value is 30.
  - `defaultValue`, `minValue` and `maxValue` are used to limit the lower and upper bounds and the default value for the timer, measured in seconds.
  - `nBars` controls the number of iterations that will be plotted in the bar plot (the number of files moved in each iteration for the last `nBars` iterations).
