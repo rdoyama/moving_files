@@ -4,7 +4,7 @@ This is a small Python3 application that moves files whose names match a user in
 
 This program was written and tested in a Linux machine with Python 3.8.
 
-![](https://imgur.com/LbaUZKR)
+<img src="https://i.ibb.co/JjsntRC/Screenshot-from-2021-06-30-14-20-46.png" alt="Your image title" width="700"/>
 
 ## Dependencies
 
