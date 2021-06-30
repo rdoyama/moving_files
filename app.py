@@ -8,6 +8,7 @@ that matches a regular expression and moves them to the output directory.
 import sys
 import os
 import time
+import json
 
 from PyQt5.QtCore import QDateTime, Qt, QTimer
 from PyQt5.QtGui import QTextCursor
@@ -33,11 +34,15 @@ class MoveFileAppUI(QMainWindow):
 	inputs, statistics, plots and logs. Actions, input
 	checking, etc. is performed by the Controller class.
 	"""
-	def __init__(self):
+	def __init__(self, config):
 		super().__init__()
+
+		self.config = config
+
 		self.setWindowTitle("Moving Files App")
-		# self.setFixedSize(1000, 700)
-		self.resize(1000, 700)
+		w = self.config["display"]["initialWidth"]
+		h = self.config["display"]["initialHeight"]
+		self.resize(w, h)
 		self._createMenu()
 
 		centralWidget = QWidget()
@@ -117,9 +122,12 @@ class MoveFileAppUI(QMainWindow):
 		formLayout.addRow("Destination Directory:", self.destDir)
 		
 		self.timer = QSpinBox(self)
-		self.timer.setValue(60)
-		self.timer.setMaximum(1000000)
-		self.timer.setMinimum(1)
+		defaultValue = self.config["spin"]["defaultValue"]
+		minValue = self.config["spin"]["minValue"]
+		maxValue = self.config["spin"]["maxValue"]
+		self.timer.setValue(defaultValue)
+		self.timer.setMaximum(maxValue)
+		self.timer.setMinimum(minValue)
 		self.timer.setAlignment(Qt.AlignRight)
 		formLayout.addRow("Timer (seconds):", self.timer)
 
@@ -159,7 +167,8 @@ class MoveFileAppUI(QMainWindow):
 	def _createStatisticsBox(self):
 		statsBox = QGroupBox("Statistics")
 		self.stats = Statistics()
-		self.stats.create(statsBox)
+		textWidth = self.config["display"]["statsTextWidth"]
+		self.stats.create(statsBox, textWidth)
 		# self.stats.update([]) # Replace with data
 
 		self.mainLayout.addWidget(statsBox, 0, 7, 1, 3)
@@ -196,7 +205,8 @@ class Controller(object):
 				"runNumFiles": [],
 				"fileSizes": [],
 				"fileMoveTime": [],
-				"fileMoveTimeTaken": []
+				"fileMoveTimeTaken": [],
+				"overwritten": 0
 		}
 		self._connectSignals()
 
@@ -214,7 +224,8 @@ class Controller(object):
 				"runNumFiles": [],
 				"fileSizes": [],
 				"fileMoveTime": [],
-				"fileMoveTimeTaken": []
+				"fileMoveTimeTaken": [],
+				"overwritten": 0
 		}
 		self._gui.plots.update(self.data)
 		self._gui.stats.reset()
@@ -256,9 +267,12 @@ class Controller(object):
 			fileSize = os.path.getsize(file) / 1000 # in kbytes
 			self._gui.logs.update(f"Moving file: {os.path.basename(file)}")
 			try:
+				exists = os.path.isfile(futurePath)
 				moveTime = time.perf_counter()
 				os.rename(file, futurePath)
 				moveTime = time.perf_counter() - moveTime
+				if exists:
+					self.data["overwriten"] += 1
 				self.data["fileCount"] += 1
 				self.data["fileSizes"].append(fileSize)
 				self.data["fileMoveTimeTaken"].append(moveTime)
@@ -271,6 +285,7 @@ class Controller(object):
 		self.data["runCount"] += 1
 
 		self._gui.plots.update(self.data)
+		self._gui.stats.update(self.data)
 
 		self._gui.logs.update(f"Iteration complete. {successMoves} files were moved.")
 
@@ -342,8 +357,10 @@ class Controller(object):
 
 
 def main():
+	with open("config.json", "r") as f:
+		config = json.load(f)
 	app = QApplication([])
-	gui = MoveFileAppUI()
+	gui = MoveFileAppUI(config)
 	gui.show()
 
 	ctrl = Controller(gui)
