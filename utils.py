@@ -12,6 +12,8 @@ import re
 import os
 import glob
 
+from functools import reduce
+
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.ticker import MaxNLocator
@@ -42,39 +44,63 @@ class About(object):
 
 
 class Statistics(object):
-	def create(self, Widget, lineWidth=30):
-		text = """
-			<center><code>
-			  <br>Files moved: ...</br>
-			  <br>Average file size: ... kB</br>
-			  <br>Largest file size: ... kB</br>
-			  <br>Average moves per run: ...</br>
-			  <br>Run: ...</br>
-			</center></code>
-		"""
+	def create(self, Widget, textWidth=30):
+		self.textWidth = max(textWidth, 30)
+		self.properties = [
+			("Run", ""),
+			("Files moved", ""),
+			("Average file size", "kB"),
+			("Largest file size", "kB"),
+			("Average moves per run", ""),
+			("Overwritten files", "")
+		]
 
 		boxLayout = QVBoxLayout()
 
+		text = self.genText()
 		self.textLabel = QLabel(text)
 		boxLayout.addWidget(self.textLabel)
 		Widget.setLayout(boxLayout)
 
 	def update(self, data):
-		new_text = """
-			<br>Average: 123</br>
-			<br>Other statistics123</br>
-		"""
+		new_text = self.genText(data)
 		self.textLabel.setText(new_text)
 
 	def reset(self):
-		text = """
-			<br>Files moved: ...</br>
-			<br>Average file size: ... kB</br>
-			<br>Largest file size: ... kB</br>
-			<br></br>
-			<br></br>
-		"""
+		text = self.genText()
 		self.textLabel.setText(text)
+
+	def formatLine(self, key, val=0, unit=""):
+		keySize = len(key)
+		if isinstance(val, float):
+			valStr = str(round(val, 2))
+		else:
+			valStr = str(val)
+		valSize = len(valStr)
+		unitSize = len(unit)
+		nDots = self.textWidth - keySize - valSize - unitSize
+		return "<br>" + key + nDots * "_" + valStr + unit + "</br>"
+
+	def genText(self, data=None):
+		if data is None:
+			vals = [0] * len(self.properties)
+		else:
+			run = data["runCount"]
+			moved = data["fileCount"]
+			fsizes = data["fileSizes"]
+			avg = sum(fsizes) / len(fsizes)
+			largest = max(fsizes)
+			avgmv = moved / run
+			overw = data["overwritten"]
+			vals = [run, moved, avg, largest, avgmv, overw]
+
+		lines = ["<center><code>"]
+		for (key, unit), val in zip(self.properties, vals):
+			lines.append(self.formatLine(key, val, unit))
+		lines.append("</center></code>")
+
+		return reduce(lambda x, y: x + y, lines)
+
 
 
 class LogBox(object):
@@ -158,7 +184,6 @@ class PlotCanvas(FigureCanvas):
 			self.axBar = self.figure.add_subplot(111)
 
 		self.bar = self.axBar.bar(runNo, runNumFiles)
-		# self.axBar.set_xticks(runNo)
 		self.axBar.set_ylabel("File Count")
 		self.axBar.set_xlabel("Run")
 		xmin = 0 if runNo == [] else min(runNo) - 1
@@ -166,8 +191,6 @@ class PlotCanvas(FigureCanvas):
 		self.axBar.set_xlim(xmin, xmax)
 		self.axBar.xaxis.set_major_locator(MaxNLocator(integer=True))
 		self.axBar.set_title(f"Files moved in the last {n} runs")
-		# ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d %H:%M:%S"))
-		# ax.xaxis.set_tick_params(rotation=30)
 		plt.tight_layout()
 		self.draw()
 
