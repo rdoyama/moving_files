@@ -175,8 +175,9 @@ class MoveFileAppUI(QMainWindow):
 
 	def _createPlotsBox(self):
 		plotsBox = QGroupBox("Plots")
+		nbars = self.config["barPlot"]["nBars"]
 		self.plots = Plots()
-		self.plots.create(plotsBox)
+		self.plots.create(plotsBox, nbars=nbars)
 
 		self.mainLayout.addWidget(plotsBox, 1, 0, 1, 10)
 
@@ -217,6 +218,10 @@ class Controller(object):
 		self._gui.clearMenu.triggered.connect(self._clear)
 
 	def _clear(self):
+		if self._running:
+			self._stop()
+			self._gui.statusBar.showMessage("Ready")
+
 		self.data = {
 				"fileCount": 0,
 				"runCount": 0,
@@ -233,7 +238,7 @@ class Controller(object):
 		self._resetInputs()
 
 	def _start(self):
-		self._gui.logs.update("Checking inputs...")
+		self._gui.statusBar.showMessage("Checking inputs...")
 
 		self.regex = self._gui.regex.text()
 		self.srcDir = self._gui.sourceDir.text()
@@ -241,7 +246,7 @@ class Controller(object):
 		if not self._checkInputs(self.regex, self.srcDir, self.dstDir):
 			return
 
-		self._gui.statusBar.showMessage("All inputs are valid")
+		self._gui.logs.update("Inputs checked. OK")
 
 		self._running = True
 		self._lockInputs()
@@ -261,16 +266,17 @@ class Controller(object):
 
 			futurePath = os.path.join(self.dstDir, os.path.basename(file))
 			if not self._gui.overwrite and os.path.isfile(futurePath):
-				self._gui.logs.update(f"File {file} already exists. Skipping...")
+				self._gui.logs.update(f"File {os.path.basename(file)} already exists. Skipping...")
 				continue
 
 			fileSize = os.path.getsize(file) / 1000 # in kbytes
-			self._gui.logs.update(f"Moving file: {os.path.basename(file)}")
+			self._gui.statusBar.showMessage(f"Moving file: {os.path.basename(file)}")
 			try:
 				exists = os.path.isfile(futurePath)
 				moveTime = time.perf_counter()
 				os.rename(file, futurePath)
 				moveTime = time.perf_counter() - moveTime
+				self._gui.logs.update(f"File {os.path.basename(file)} moved")
 				if exists:
 					self.data["overwriten"] += 1
 				self.data["fileCount"] += 1
@@ -287,11 +293,13 @@ class Controller(object):
 		self._gui.plots.update(self.data)
 		self._gui.stats.update(self.data)
 
-		self._gui.logs.update(f"Iteration complete. {successMoves} files were moved.")
+		self._gui.logs.update(f"Iteration complete. {successMoves}/{len(validFiles)} files were moved.")
 
 		now = QDateTime.currentDateTime()
 		nextIt = now.addSecs(self._gui.timer.value())
 		self._gui.logs.update(f"Next iteration at {nextIt.toString('yyyy-MM-dd HH:mm:ss')}")
+		self._gui.logs.update("...")
+		self._gui.statusBar.showMessage("Waiting...")
 
 		self.timer.start(1000 * self._gui.timer.value())
 
