@@ -258,6 +258,7 @@ class Controller(object):
 		self._gui.logs.update(f"Found {len(validFiles)} files")
 
 		successMoves = 0
+		fileNames = []
 		for file in validFiles:
 
 			if not self._running:
@@ -276,6 +277,7 @@ class Controller(object):
 				moveTime = time.perf_counter()
 				os.rename(file, futurePath)
 				moveTime = time.perf_counter() - moveTime
+				fileNames.append(file)
 				self._gui.logs.update(f"File {os.path.basename(file)} moved")
 				if exists:
 					self.data["overwriten"] += 1
@@ -292,6 +294,7 @@ class Controller(object):
 
 		self._gui.plots.update(self.data)
 		self._gui.stats.update(self.data)
+		self._writeLogFile(fileNames, successMoves)
 
 		self._gui.logs.update(f"Iteration complete. {successMoves}/{len(validFiles)} files were moved.")
 
@@ -302,6 +305,20 @@ class Controller(object):
 		self._gui.statusBar.showMessage("Waiting...")
 
 		self.timer.start(1000 * self._gui.timer.value())
+
+	def _writeLogFile(self, fileNames, nMoved):
+		if nMoved > 0:
+			with open("log.txt", "a") as f:
+				for i, filename in enumerate(fileNames):
+					fcount = self.data["fileCount"]
+					moveTime = self.data["fileMoveTime"][fcount - nMoved + i]
+					fSize = self.data["fileSizes"][fcount - nMoved + i]
+					fSize = str(fSize) if isinstance(fSize, int) else str(round(fSize, 2))
+					timeStr = self.data["fileMoveTime"][fcount - nMoved + i].toString('yyyy-MM-dd HH:mm:ss')
+					timeStr = "[" + timeStr + "]"
+					text = [timeStr, "File", os.path.basename(filename), "moved from",
+							self.srcDir, "to", self.dstDir, "|", "Size (kB):", fSize]
+					f.write(" ".join(text) + "\n")
 
 	def _checkInputs(self, regex, srcDir, dstDir):
 		if not checkRegex(regex):
@@ -367,6 +384,7 @@ class Controller(object):
 def main():
 	with open("config.json", "r") as f:
 		config = json.load(f)
+
 	app = QApplication([])
 	gui = MoveFileAppUI(config)
 	gui.show()
