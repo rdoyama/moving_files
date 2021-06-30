@@ -22,6 +22,9 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 
 
 class About(object):
+	"""
+	Creates a new window containing program information
+	"""
 	def show(self, Widget, version, author, git):
 		text = """
 			<center>
@@ -44,7 +47,13 @@ class About(object):
 
 
 class Statistics(object):
+	"""
+	Handles information shown in the Statistics box
+	"""
 	def create(self, Widget, textWidth=30):
+		"""
+		Creates the default text
+		"""
 		self.textWidth = max(textWidth, 30)
 		self.properties = [
 			("Run", ""),
@@ -63,6 +72,9 @@ class Statistics(object):
 		Widget.setLayout(boxLayout)
 
 	def update(self, data):
+		"""
+		Update statistics with the updated data dictionary
+		"""
 		new_text = self.genText(data)
 		self.textLabel.setText(new_text)
 
@@ -71,6 +83,9 @@ class Statistics(object):
 		self.textLabel.setText(text)
 
 	def formatLine(self, key, val=0, unit=""):
+		"""
+		Ensures the line has exactly textWidth characters
+		"""
 		keySize = len(key)
 		if isinstance(val, float):
 			valStr = str(round(val, 2))
@@ -82,6 +97,10 @@ class Statistics(object):
 		return "<br>" + key + nDots * "_" + valStr + unit + "</br>"
 
 	def genText(self, data=None):
+		"""
+		Formats all lines and returns the formatted text in
+		HTML.
+		"""
 		if data is None:
 			vals = [0] * len(self.properties)
 		else:
@@ -102,8 +121,11 @@ class Statistics(object):
 		return reduce(lambda x, y: x + y, lines)
 
 
-
 class LogBox(object):
+	"""
+	A simple read-only text box in the bottom of the main window
+	that displays the status of the program.
+	"""
 	def create(self, Widget):
 		boxLayout = QVBoxLayout()
 		self.txtBrowser = QTextEdit()
@@ -122,6 +144,10 @@ class LogBox(object):
 
 
 class Plots(object):
+	"""
+	Handles the Plots box, creating and updating the bar plot
+	and the histogram
+	"""
 	def create(self, Widget, nbars=5):
 		self.nbars = nbars
 		boxLayout = QHBoxLayout()
@@ -137,10 +163,13 @@ class Plots(object):
 
 
 class PlotCanvas(FigureCanvas):
+	"""
+	Connects PyQt5 with matplotlib, so that the plots can be added
+	as Widgets
+	"""
 	def __init__(self, parent=None, width=5, height=3, dpi=100,
 						data={}, plotType="hist", nbars=5):
 		self.fig = plt.Figure(figsize=(width, height), dpi=dpi)
-		# fig.patch.set_alpha(0)
 		self.fig.subplots_adjust(bottom=0.20, left=0.18)
 		FigureCanvas.__init__(self, self.fig)
 		self.setParent(parent)
@@ -153,10 +182,12 @@ class PlotCanvas(FigureCanvas):
 			self.plotBar(data, n=nbars)
 
 	def plotHist(self, data, update=False):
+		"""
+		Plots a histogram of all moved files
+		"""
 		fileSizes = data.get("fileSizes", [])
 		if update:
 			self.axHist.cla()
-			# self.hist.set_data(fileSizes)
 			_, _, self.hist = self.axHist.hist(fileSizes,
 					bins=min(len(fileSizes)//2 + 1, 30))
 			self.axHist.relim()
@@ -169,7 +200,6 @@ class PlotCanvas(FigureCanvas):
 		self.axHist.set_ylabel("File Count")
 		self.axHist.set_xlabel("Fize Size (kB)")
 		self.axHist.set_title("Histogram of file sizes")
-		# self.axHist.xaxis.set_major_locator(MaxNLocator(integer=True))
 		self.axHist.yaxis.set_major_locator(MaxNLocator(integer=True))
 		plt.tight_layout()
 		self.draw()
@@ -193,7 +223,6 @@ class PlotCanvas(FigureCanvas):
 		xmax = 2 if runNo == [] else max(runNo) + 1
 		self.axBar.set_xlim(xmin, xmax)
 		self.axBar.xaxis.set_major_locator(MaxNLocator(integer=True))
-		# self.axBar.yaxis.set_major_locator(MaxNLocator(integer=True))
 		self.axBar.set_title(f"Files moved in the last {n} runs")
 		plt.tight_layout()
 		self.draw()
