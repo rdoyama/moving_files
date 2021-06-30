@@ -92,8 +92,8 @@ class MoveFileAppUI(QMainWindow):
 
 	def _createInputsBox(self):
 		"""
-		Location: Top left
-		Reads user input: regex, dir, out_dir, timer
+		Reads user input: Regex, Source dir, Destination dir and gives the
+		option to overwrite existing files in the destination directory.
 		"""
 		boxLayout = QVBoxLayout()
 		inputBox = QGroupBox("Inputs")
@@ -121,6 +121,8 @@ class MoveFileAppUI(QMainWindow):
 		self.destDir.setPlaceholderText(txtExample)
 		formLayout.addRow("Destination Directory:", self.destDir)
 		
+		##
+		## Timer
 		self.timer = QSpinBox(self)
 		defaultValue = self.config["spin"]["defaultValue"]
 		minValue = self.config["spin"]["minValue"]
@@ -134,7 +136,7 @@ class MoveFileAppUI(QMainWindow):
 		boxLayout.addLayout(formLayout)
 
 		##
-		## Buttons + Timer
+		## Buttons
 		buttonsLayout = QHBoxLayout()
 		
 		self.startButton = QPushButton("Start", self)
@@ -169,7 +171,6 @@ class MoveFileAppUI(QMainWindow):
 		self.stats = Statistics()
 		textWidth = self.config["display"]["statsTextWidth"]
 		self.stats.create(statsBox, textWidth)
-		# self.stats.update([]) # Replace with data
 
 		self.mainLayout.addWidget(statsBox, 0, 7, 1, 3)
 
@@ -218,6 +219,11 @@ class Controller(object):
 		self._gui.clearMenu.triggered.connect(self._clear)
 
 	def _clear(self):
+		"""
+		Clear button in the Menu
+		This option stops the program, clears all stored data and resets
+		inputs, log box, statistics and plots.
+		"""
 		if self._running:
 			self._stop()
 			self._gui.statusBar.showMessage("Ready")
@@ -240,6 +246,8 @@ class Controller(object):
 	def _start(self):
 		self._gui.statusBar.showMessage("Checking inputs...")
 
+		##
+		## Input Checking
 		self.regex = self._gui.regex.text()
 		self.srcDir = self._gui.sourceDir.text()
 		self.dstDir = self._gui.destDir.text()
@@ -257,8 +265,9 @@ class Controller(object):
 		validFiles = getValidFiles(self.srcDir, self.regex)
 		self._gui.logs.update(f"Found {len(validFiles)} files")
 
-		successMoves = 0
-		fileNames = []
+		successMoves = 0 # Number of files moved in this iteration
+		fileNames = []   # Files moved in this iteration
+
 		for file in validFiles:
 
 			if not self._running:
@@ -266,6 +275,7 @@ class Controller(object):
 				return
 
 			futurePath = os.path.join(self.dstDir, os.path.basename(file))
+
 			if not self._gui.overwrite and os.path.isfile(futurePath):
 				self._gui.logs.update(f"File {os.path.basename(file)} already exists. Skipping...")
 				continue
@@ -277,6 +287,8 @@ class Controller(object):
 				moveTime = time.perf_counter()
 				os.rename(file, futurePath)
 				moveTime = time.perf_counter() - moveTime
+
+				# Gathering Data
 				fileNames.append(file)
 				self._gui.logs.update(f"File {os.path.basename(file)} moved")
 				if exists:
@@ -292,6 +304,7 @@ class Controller(object):
 		self.data["runNumFiles"].append(successMoves)
 		self.data["runCount"] += 1
 
+		# Update plots, statistics and the log file
 		self._gui.plots.update(self.data)
 		self._gui.stats.update(self.data)
 		self._writeLogFile(fileNames, successMoves)
@@ -304,9 +317,18 @@ class Controller(object):
 		self._gui.logs.update("...")
 		self._gui.statusBar.showMessage("Waiting...")
 
+		# Wait for the next iteration
 		self.timer.start(1000 * self._gui.timer.value())
 
 	def _writeLogFile(self, fileNames, nMoved):
+		"""
+		This function writes information to the log file for each
+		file moved. Information includes: Time, file name, source dir,
+		destination dir and file size
+
+		Example:
+		[YYYY-mm-dd HH:MM:SS] File filename moved from dir1 to dir2 | Size (kB): size
+		"""
 		if nMoved > 0:
 			with open("log.txt", "a") as f:
 				for i, filename in enumerate(fileNames):
@@ -321,6 +343,10 @@ class Controller(object):
 					f.write(" ".join(text) + "\n")
 
 	def _checkInputs(self, regex, srcDir, dstDir):
+		"""
+		Input checking. If inputs are valid, paints the text cell with blue,
+		red otherwise. Valid paths are those that exists and are writable.
+		"""
 		if not checkRegex(regex):
 			self._gui.statusBar.showMessage("Bad Regular Expression")
 			self._gui.regex.setStyleSheet("QLineEdit{background : LightPink;}")
@@ -348,12 +374,18 @@ class Controller(object):
 		return True
 
 	def _resetInputs(self):
+		"""
+		Clear text inputs and reset timer to default
+		"""
 		self._gui.regex.setText("")
 		self._gui.sourceDir.setText("")
 		self._gui.destDir.setText("")
-		self._gui.timer.setValue(60)
+		self._gui.timer.setValue(self._gui.config["spin"]["defaultValue"])
 
 	def _lockInputs(self):
+		"""
+		Disables input editing while the program is running
+		"""
 		self._gui.regex.setReadOnly(True)
 		self._gui.sourceDir.setReadOnly(True)
 		self._gui.destDir.setReadOnly(True)
@@ -362,6 +394,9 @@ class Controller(object):
 		self._gui.timer.setReadOnly(True)
 
 	def _unlockInputs(self):
+		"""
+		Unlocks text inputsand timer and removes text cells background color
+		"""
 		self._gui.regex.setReadOnly(False)
 		self._gui.sourceDir.setReadOnly(False)
 		self._gui.destDir.setReadOnly(False)
