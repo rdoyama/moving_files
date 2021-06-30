@@ -88,8 +88,8 @@ class Statistics(object):
 			run = data["runCount"]
 			moved = data["fileCount"]
 			fsizes = data["fileSizes"]
-			avg = sum(fsizes) / len(fsizes)
-			largest = max(fsizes)
+			avg = 0 if len(fsizes) == 0 else sum(fsizes) / len(fsizes)
+			largest = 0 if len(fsizes) == 0 else max(fsizes)
 			avgmv = moved / run
 			overw = data["overwritten"]
 			vals = [run, moved, avg, largest, avgmv, overw]
@@ -122,22 +122,23 @@ class LogBox(object):
 
 
 class Plots(object):
-	def create(self, Widget):
+	def create(self, Widget, nbars=5):
+		self.nbars = nbars
 		boxLayout = QHBoxLayout()
-		self.leftPlot = PlotCanvas(plotType="bar")
+		self.leftPlot = PlotCanvas(plotType="bar", nbars=self.nbars)
 		self.rightPlot = PlotCanvas(plotType="hist")
 		boxLayout.addWidget(self.leftPlot)
 		boxLayout.addWidget(self.rightPlot)
 		Widget.setLayout(boxLayout)
 
 	def update(self, data, update=True):
-		self.leftPlot.plotBar(data, update=update)
+		self.leftPlot.plotBar(data, self.nbars, update=update)
 		self.rightPlot.plotHist(data, update=update)
 
 
 class PlotCanvas(FigureCanvas):
 	def __init__(self, parent=None, width=5, height=3, dpi=100,
-						data={}, plotType="hist"):
+						data={}, plotType="hist", nbars=5):
 		self.fig = plt.Figure(figsize=(width, height), dpi=dpi)
 		# fig.patch.set_alpha(0)
 		self.fig.subplots_adjust(bottom=0.20, left=0.18)
@@ -149,7 +150,7 @@ class PlotCanvas(FigureCanvas):
 		if plotType == "hist":
 			self.plotHist(data)
 		elif plotType == "bar":
-			self.plotBar(data)
+			self.plotBar(data, n=nbars)
 
 	def plotHist(self, data, update=False):
 		fileSizes = data.get("fileSizes", [])
@@ -168,6 +169,8 @@ class PlotCanvas(FigureCanvas):
 		self.axHist.set_ylabel("File Count")
 		self.axHist.set_xlabel("Fize Size (kB)")
 		self.axHist.set_title("Histogram of file sizes")
+		# self.axHist.xaxis.set_major_locator(MaxNLocator(integer=True))
+		self.axHist.yaxis.set_major_locator(MaxNLocator(integer=True))
 		plt.tight_layout()
 		self.draw()
 
@@ -190,6 +193,7 @@ class PlotCanvas(FigureCanvas):
 		xmax = 2 if runNo == [] else max(runNo) + 1
 		self.axBar.set_xlim(xmin, xmax)
 		self.axBar.xaxis.set_major_locator(MaxNLocator(integer=True))
+		# self.axBar.yaxis.set_major_locator(MaxNLocator(integer=True))
 		self.axBar.set_title(f"Files moved in the last {n} runs")
 		plt.tight_layout()
 		self.draw()
