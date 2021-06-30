@@ -1,0 +1,17 @@
+{
+    "display": {
+        "initialWidth": 1000,
+        "initialHeight": 700,
+        "statsTextWidth": 40
+    },
+
+    "spin": {
+        "defaultValue": 60,
+        "minValue": 1,
+        "maxValue": 1000000
+    },
+
+    "barPlot": {
+        "nBars": 5
+    }
+}
