@@ -58,7 +58,7 @@ class MoveFileAppUI(QMainWindow):
 		self.setCentralWidget(centralWidget)
 
 	def _createMenu(self):
-		self.menu = self.menuBar().addMenu("&Menu")
+		self.menu = self.menuBar().addMenu("Menu")
 
 		# Style submenu
 		styleMenu = self.menu.addMenu("Style")
@@ -68,10 +68,10 @@ class MoveFileAppUI(QMainWindow):
 		
 		self.clearMenu = self.menu.addAction("Clear")
 
-		self.menu.addAction("&Exit", self.close)
+		self.menu.addAction("&Exit", self.close, shortcut="Ctrl+Q")
 
 		# Help menu
-		self.help = self.menuBar().addMenu("&Help")
+		self.help = self.menuBar().addMenu("Help")
 		self.help.addAction("About", self._aboutWindow)
 
 	def _changeStyle(self, style):
@@ -153,10 +153,10 @@ class MoveFileAppUI(QMainWindow):
 
 		boxLayout.addLayout(buttonsLayout)
 
-		self.regex.setText(".*jpg")
-		self.sourceDir.setText("/home/rafael/Desktop/teste/folder1")
-		self.destDir.setText("/home/rafael/Desktop/teste/folder2")
-		self.timer.setValue(4)
+		# self.regex.setText(".*jpg")
+		# self.sourceDir.setText("/home/rafael/Desktop/teste/folder1")
+		# self.destDir.setText("/home/rafael/Desktop/teste/folder2")
+		# self.timer.setValue(4)
 
 		self.mainLayout.addWidget(inputBox, 0, 0, 1, 7)
 
@@ -267,12 +267,14 @@ class Controller(object):
 
 		successMoves = 0 # Number of files moved in this iteration
 		fileNames = []   # Files moved in this iteration
+		stop = False
 
 		for file in validFiles:
 
 			if not self._running:
 				self.timer.stop()
-				return
+				stop = True
+				break
 
 			futurePath = os.path.join(self.dstDir, os.path.basename(file))
 
@@ -316,6 +318,9 @@ class Controller(object):
 		self._gui.logs.update(f"Next iteration at {nextIt.toString('yyyy-MM-dd HH:mm:ss')}")
 		self._gui.logs.update("...")
 		self._gui.statusBar.showMessage("Waiting...")
+
+		if stop:
+			return
 
 		# Wait for the next iteration
 		self.timer.start(1000 * self._gui.timer.value())
