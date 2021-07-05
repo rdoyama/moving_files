@@ -1,6 +1,6 @@
 # Moving Files Application
 
-This is a small Python3 application that moves files whose names match a user input regular expression. The source and destination directories are specified by the user and can not be remote directories. As long as the program is running, the code checks if there are new valid files in the source directory based on a timer and continuously shows plots and statistics regarding the files that were moved.
+This is a small Python3 application that moves files whose names match a user input regular expression. The source and destination directories are specified by the user and can not be remote directories. As long as the program is running, the code checks if there are new valid files in the source directory based on a timer and continuously shows plots and statistics regarding the files that were moved. The source and destination directories must exist and be writable for the program to run.
 
 This program was written and tested in a Linux machine with Python 3.8.
 
@@ -31,7 +31,7 @@ In the main window there ate three buttons: "Start", "Stop" and "Reset". The "St
 
 ## Configuration File
 
- - `initialWidth` and `initialHeight`define the width and height of the main window. The minimum recommended values are 1000 and 7000, respectively.
+ - `initialWidth` and `initialHeight`define the width and height of the main window. The minimum recommended values are 1000 and 700, respectively.
  - `statsTextWidth` is the size of each line in the statistics box measured in characters. The minimum recommended value is 30.
  - `defaultValue`, `minValue` and `maxValue` are used to limit the lower and upper bounds and the default value for the timer, measured in seconds.
  - `nBars` controls the number of iterations that will be plotted in the bar plot (the number of files moved in each iteration for the last `nBars` iterations).
