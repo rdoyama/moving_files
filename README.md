@@ -22,6 +22,8 @@ $ python3 app.py
 
 Finally, write down the regular expression, source and output directories and set the timer. Click "Start" when ready and the program will start moving the files (if there are any). The progress can be tracked with the statistics and plots boxes or the status bar.
 
+**Caution**: Closing/quitting the program while it is running may corrupt files.
+
 ## Menu & Buttons
 The menu is simple and allows the user to change the window style, clear all data generated during the last run of the program, exit and show program information.
 
